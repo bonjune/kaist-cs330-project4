@@ -36,7 +36,6 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.example.pj4test.ProjectConfiguration
-import java.util.LinkedList
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import com.example.pj4test.cameraInference.PersonClassifier
@@ -44,7 +43,7 @@ import com.example.pj4test.databinding.FragmentCameraBinding
 import org.tensorflow.lite.task.vision.detector.Detection
 
 class CameraFragment : Fragment(), PersonClassifier.DetectorListener {
-    private val TAG = "CameraFragment"
+    private val _tag = "CameraFragment"
 
     private var _fragmentCameraBinding: FragmentCameraBinding? = null
 
@@ -84,9 +83,8 @@ class CameraFragment : Fragment(), PersonClassifier.DetectorListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        personClassifier = PersonClassifier()
-        personClassifier.initialize(requireContext())
-        personClassifier.setDetectorListener(this)
+        personClassifier = PersonClassifier(requireContext(), this)
+        personClassifier.setupObjectDetector()
 
         // Initialize our background executor
         cameraExecutor = Executors.newSingleThreadExecutor()
@@ -157,7 +155,7 @@ class CameraFragment : Fragment(), PersonClassifier.DetectorListener {
                 imageAnalyzer
             )
         } catch (exc: Exception) {
-            Log.e(TAG, "Use case binding failed", exc)
+            Log.e(_tag, "Use case binding failed", exc)
         }
     }
 
@@ -187,7 +185,7 @@ class CameraFragment : Fragment(), PersonClassifier.DetectorListener {
     // Update UI after objects have been detected. Extracts original image height/width
     // to scale and place bounding boxes properly through OverlayView
     override fun onObjectDetectionResults(
-        results: MutableList<Detection>?,
+        results: MutableList<Detection>,
         inferenceTime: Long,
         imageHeight: Int,
         imageWidth: Int
@@ -195,13 +193,13 @@ class CameraFragment : Fragment(), PersonClassifier.DetectorListener {
         activity?.runOnUiThread {
             // Pass necessary information to OverlayView for drawing on the canvas
             fragmentCameraBinding.overlay.setResults(
-                results ?: LinkedList<Detection>(),
+                results,
                 imageHeight,
                 imageWidth
             )
             
             // find at least one bounding box of the person
-            val isPersonDetected: Boolean = results!!.find { it.categories[0].label == "person" } != null
+            val isPersonDetected: Boolean = results.find { it.categories[0].label == "person" } != null
             
             // change UI according to the result
             if (isPersonDetected) {

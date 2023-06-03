@@ -19,8 +19,6 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.os.SystemClock
 import android.util.Log
-import com.example.pj4test.audioInference.SnapClassifier
-import org.tensorflow.lite.gpu.CompatibilityList
 import org.tensorflow.lite.support.image.ImageProcessor
 import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.image.ops.Rot90Op
@@ -28,22 +26,15 @@ import org.tensorflow.lite.task.core.BaseOptions
 import org.tensorflow.lite.task.vision.detector.Detection
 import org.tensorflow.lite.task.vision.detector.ObjectDetector
 
-class PersonClassifier {
+class PersonClassifier(private val context: Context, private val listener: DetectorListener) {
     // Libraries for object detection
-    lateinit var objectDetector: ObjectDetector
-
-    // Listener that will be handle the result of this classifier
-    private var objectDetectorListener: DetectorListener? = null
-
-    fun initialize(context: Context) {
-        setupObjectDetector(context)
-    }
+    private lateinit var objectDetector: ObjectDetector
 
     // Initialize the object detector using current settings on the
     // thread that is using it. CPU and NNAPI delegates can be used with detectors
     // that are created on the main thread and used on a background thread, but
     // the GPU delegate needs to be used on the thread that initialized the detector
-    private fun setupObjectDetector(context: Context) {
+    fun setupObjectDetector() {
         // Create the base options for the detector using specifies max results and score threshold
         val optionsBuilder =
             ObjectDetector.ObjectDetectorOptions.builder()
@@ -55,10 +46,9 @@ class PersonClassifier {
         optionsBuilder.setBaseOptions(baseOptionsBuilder.build())
 
         try {
-            objectDetector =
-                ObjectDetector.createFromFileAndOptions(context, MODEL_NAME, optionsBuilder.build())
+            objectDetector = ObjectDetector.createFromFileAndOptions(context, MODEL_NAME, optionsBuilder.build())
         } catch (e: IllegalStateException) {
-            objectDetectorListener?.onObjectDetectionError(
+            listener.onObjectDetectionError(
                 "Object detector failed to initialize. See error logs for details"
             )
             Log.e("Test", "TFLite failed to load model with error: " + e.message)
@@ -71,8 +61,7 @@ class PersonClassifier {
         var inferenceTime = SystemClock.uptimeMillis()
 
         // Create preprocessor for the image.
-        // See https://www.tensorflow.org/lite/inference_with_metadata/
-        //            lite_support#imageprocessor_architecture
+        // See https://www.tensorflow.org/lite/inference_with_metadata/lite_support#imageprocessor_architecture
         val imageProcessor =
             ImageProcessor.Builder()
                 .add(Rot90Op(-imageRotation / 90))
@@ -81,9 +70,9 @@ class PersonClassifier {
         // Preprocess the image and convert it into a TensorImage for detection.
         val tensorImage = imageProcessor.process(TensorImage.fromBitmap(image))
 
-        val results = objectDetector.detect(tensorImage)
+        val results = objectDetector.detect(tensorImage) ?: mutableListOf()
         inferenceTime = SystemClock.uptimeMillis() - inferenceTime
-        objectDetectorListener?.onObjectDetectionResults(
+        listener.onObjectDetectionResults(
             results,
             inferenceTime,
             tensorImage.height,
@@ -93,15 +82,11 @@ class PersonClassifier {
     interface DetectorListener {
         fun onObjectDetectionError(error: String)
         fun onObjectDetectionResults(
-            results: MutableList<Detection>?,
+            results: MutableList<Detection>,
             inferenceTime: Long,
             imageHeight: Int,
             imageWidth: Int
         )
-    }
-
-    fun setDetectorListener(listener: DetectorListener) {
-        objectDetectorListener = listener
     }
 
     companion object {

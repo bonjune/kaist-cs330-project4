@@ -147,7 +147,7 @@ class SnapClassifier {
      * @property    THRESHOLD           threshold of the score to classify sound as a horn sound
      */
     companion object {
-        const val TAG = "HornClassifier"
+        const val TAG = "SnapClassifier"
 
         const val REFRESH_INTERVAL_MS = 33L
         const val YAMNET_MODEL = "yamnet_classification.tflite"
