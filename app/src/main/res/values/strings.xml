@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">PJ4TEST</string>
+    
+    <string name="cat_detected">CAT</string>
+    <string name="cat_not_detected">NO CAT</string>
+    <string name="meow_detected">MEOW</string>
+    <string name="meow_not_detected">NO MEOW</string>
 </resources>

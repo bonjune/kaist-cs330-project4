@@ -36,21 +36,23 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.example.pj4test.ProjectConfiguration
+import com.example.pj4test.R
+import com.example.pj4test.audioInference.MeowDetector
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import com.example.pj4test.cameraInference.CatDetector
-import com.example.pj4test.databinding.FragmentCameraBinding
+import com.example.pj4test.databinding.FragmentHungryCatBinding
 import org.tensorflow.lite.task.vision.detector.Detection
 
-class CameraFragment : Fragment(), CatDetector.DetectorListener {
-    private val _tag = "CameraFragment"
+class HungryCatFragment : Fragment(), CatDetector.CatDetectionListener, MeowDetector.MeowingListener {
+    private val _tag = "HungryCatFragment"
 
-    private var _fragmentCameraBinding: FragmentCameraBinding? = null
+    private var _fragmentBinding: FragmentHungryCatBinding? = null
 
-    private val fragmentCameraBinding
-        get() = _fragmentCameraBinding!!
-    
-    private lateinit var personView: TextView
+    private val fragmentBinding
+        get() = _fragmentBinding!!
+
+    private lateinit var catDetectionView: TextView
     
     private lateinit var catDetector: CatDetector
     private lateinit var bitmapBuffer: Bitmap
@@ -58,11 +60,14 @@ class CameraFragment : Fragment(), CatDetector.DetectorListener {
     private var imageAnalyzer: ImageAnalysis? = null
     private var camera: Camera? = null
 
+    private lateinit var meowDetector: MeowDetector
+    private lateinit var meowView: TextView
+
     /** Blocking camera operations are performed using this executor */
     private lateinit var cameraExecutor: ExecutorService
 
     override fun onDestroyView() {
-        _fragmentCameraBinding = null
+        _fragmentBinding = null
         super.onDestroyView()
 
         // Shut down our background executor
@@ -74,9 +79,9 @@ class CameraFragment : Fragment(), CatDetector.DetectorListener {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _fragmentCameraBinding = FragmentCameraBinding.inflate(inflater, container, false)
-
-        return fragmentCameraBinding.root
+        _fragmentBinding = FragmentHungryCatBinding.inflate(inflater, container, false)
+        Log.d(_tag, "Fragment inflated")
+        return fragmentBinding.root
     }
 
     @SuppressLint("MissingPermission")
@@ -84,18 +89,24 @@ class CameraFragment : Fragment(), CatDetector.DetectorListener {
         super.onViewCreated(view, savedInstanceState)
 
         catDetector = CatDetector(requireContext(), this)
-        catDetector.setupObjectDetector()
+        catDetector.setUpObjectDetector()
 
         // Initialize our background executor
         cameraExecutor = Executors.newSingleThreadExecutor()
 
         // Wait for the views to be properly laid out
-        fragmentCameraBinding.viewFinder.post {
+         fragmentBinding.viewFinder.post {
             // Set up the camera and its use cases
             setUpCamera()
         }
 
-        personView = fragmentCameraBinding.PersonView
+        catDetectionView = fragmentBinding.CatDetectionView
+        meowView = fragmentBinding.MeowView
+
+        meowDetector = MeowDetector(requireContext(), this)
+        meowDetector.initializeAndStart()
+
+        Log.d(_tag, "Detectors are set up")
     }
 
     // Initialize CameraX, and prepare to bind the camera use cases
@@ -111,6 +122,7 @@ class CameraFragment : Fragment(), CatDetector.DetectorListener {
             },
             ContextCompat.getMainExecutor(requireContext())
         )
+        Log.d(_tag, "Camera is set up")
     }
 
     // Declare and bind preview, capture and analysis use cases
@@ -125,17 +137,17 @@ class CameraFragment : Fragment(), CatDetector.DetectorListener {
         preview =
             Preview.Builder()
                 .setTargetAspectRatio(AspectRatio.RATIO_4_3)
-                .setTargetRotation(fragmentCameraBinding.viewFinder.display.rotation)
+                .setTargetRotation( fragmentBinding.viewFinder.display.rotation)
                 .build()
         // Attach the viewfinder's surface provider to preview use case
-        preview?.setSurfaceProvider(fragmentCameraBinding.viewFinder.surfaceProvider)
+        preview?.setSurfaceProvider( fragmentBinding.viewFinder.surfaceProvider)
 
 
         // ImageAnalysis. Using RGBA 8888 to match how our models work
         imageAnalyzer =
             ImageAnalysis.Builder()
                 .setTargetAspectRatio(AspectRatio.RATIO_4_3)
-                .setTargetRotation(fragmentCameraBinding.viewFinder.display.rotation)
+                .setTargetRotation( fragmentBinding.viewFinder.display.rotation)
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .setOutputImageFormat(OUTPUT_IMAGE_FORMAT_RGBA_8888)
                 .build()
@@ -161,7 +173,7 @@ class CameraFragment : Fragment(), CatDetector.DetectorListener {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        imageAnalyzer?.targetRotation = fragmentCameraBinding.viewFinder.display.rotation
+        imageAnalyzer?.targetRotation = fragmentBinding.viewFinder.display.rotation
     }
 
     private fun detectObjects(image: ImageProxy) {
@@ -184,7 +196,7 @@ class CameraFragment : Fragment(), CatDetector.DetectorListener {
 
     // Update UI after objects have been detected. Extracts original image height/width
     // to scale and place bounding boxes properly through OverlayView
-    override fun onObjectDetectionResults(
+    override fun onCatDetectionResults(
         results: MutableList<Detection>,
         inferenceTime: Long,
         imageHeight: Int,
@@ -192,34 +204,48 @@ class CameraFragment : Fragment(), CatDetector.DetectorListener {
     ) {
         activity?.runOnUiThread {
             // Pass necessary information to OverlayView for drawing on the canvas
-            fragmentCameraBinding.overlay.setResults(
+            fragmentBinding.overlay.setResults(
                 results,
                 imageHeight,
                 imageWidth
             )
             
             // find at least one bounding box of the person
-            val isPersonDetected: Boolean = results.find { it.categories[0].label == "cat" } != null
+            val isCatDetected: Boolean = results.find { it.categories[0].label == "cat" } != null
             
             // change UI according to the result
-            if (isPersonDetected) {
-                personView.text = "CAT"
-                personView.setBackgroundColor(ProjectConfiguration.activeBackgroundColor)
-                personView.setTextColor(ProjectConfiguration.activeTextColor)
+            if (isCatDetected) {
+                catDetectionView.setText(R.string.cat_detected)
+                catDetectionView.setBackgroundColor(ProjectConfiguration.activeBackgroundColor)
+                catDetectionView.setTextColor(ProjectConfiguration.activeTextColor)
             } else {
-                personView.text = "NO CAT"
-                personView.setBackgroundColor(ProjectConfiguration.idleBackgroundColor)
-                personView.setTextColor(ProjectConfiguration.idleTextColor)
+                catDetectionView.setText(R.string.cat_not_detected)
+                catDetectionView.setBackgroundColor(ProjectConfiguration.idleBackgroundColor)
+                catDetectionView.setTextColor(ProjectConfiguration.idleTextColor)
             }
 
             // Force a redraw
-            fragmentCameraBinding.overlay.invalidate()
+            fragmentBinding.overlay.invalidate()
         }
     }
 
-    override fun onObjectDetectionError(error: String) {
+    override fun onCatDetectionError(error: String) {
         activity?.runOnUiThread {
             Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    override fun onMeowDetectionResult(meowScore: Float) {
+        activity?.runOnUiThread {
+            if (meowScore > MeowDetector.THRESHOLD) {
+                meowView.setText(R.string.meow_detected)
+                meowView.setBackgroundColor(ProjectConfiguration.activeBackgroundColor)
+                meowView.setTextColor(ProjectConfiguration.activeTextColor)
+            } else {
+                meowView.setText(R.string.meow_not_detected)
+                meowView.setBackgroundColor(ProjectConfiguration.idleBackgroundColor)
+                meowView.setTextColor(ProjectConfiguration.idleTextColor)
+            }
         }
     }
 }

@@ -26,7 +26,7 @@ import org.tensorflow.lite.task.core.BaseOptions
 import org.tensorflow.lite.task.vision.detector.Detection
 import org.tensorflow.lite.task.vision.detector.ObjectDetector
 
-class CatDetector(private val context: Context, private val listener: DetectorListener) {
+class CatDetector(private val context: Context, private val listener: CatDetectionListener) {
     // Libraries for object detection
     private lateinit var objectDetector: ObjectDetector
 
@@ -34,7 +34,7 @@ class CatDetector(private val context: Context, private val listener: DetectorLi
     // thread that is using it. CPU and NNAPI delegates can be used with detectors
     // that are created on the main thread and used on a background thread, but
     // the GPU delegate needs to be used on the thread that initialized the detector
-    fun setupObjectDetector() {
+    fun setUpObjectDetector() {
         // Create the base options for the detector using specifies max results and score threshold
         val optionsBuilder =
             ObjectDetector.ObjectDetectorOptions.builder()
@@ -48,7 +48,7 @@ class CatDetector(private val context: Context, private val listener: DetectorLi
         try {
             objectDetector = ObjectDetector.createFromFileAndOptions(context, MODEL_NAME, optionsBuilder.build())
         } catch (e: IllegalStateException) {
-            listener.onObjectDetectionError(
+            listener.onCatDetectionError(
                 "Object detector failed to initialize. See error logs for details"
             )
             Log.e("Test", "TFLite failed to load model with error: " + e.message)
@@ -72,16 +72,16 @@ class CatDetector(private val context: Context, private val listener: DetectorLi
 
         val results = objectDetector.detect(tensorImage) ?: mutableListOf()
         inferenceTime = SystemClock.uptimeMillis() - inferenceTime
-        listener.onObjectDetectionResults(
+        listener.onCatDetectionResults(
             results,
             inferenceTime,
             tensorImage.height,
             tensorImage.width)
     }
 
-    interface DetectorListener {
-        fun onObjectDetectionError(error: String)
-        fun onObjectDetectionResults(
+    interface CatDetectionListener {
+        fun onCatDetectionError(error: String)
+        fun onCatDetectionResults(
             results: MutableList<Detection>,
             inferenceTime: Long,
             imageHeight: Int,

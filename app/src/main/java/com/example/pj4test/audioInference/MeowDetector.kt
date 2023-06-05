@@ -11,14 +11,11 @@ import java.util.*
 import kotlin.concurrent.scheduleAtFixedRate
 
 
-class MeowDetector {
+class MeowDetector(private val context: Context, private val listener: MeowingListener) {
     // Libraries for audio classification
     lateinit var classifier: AudioClassifier
     lateinit var recorder: AudioRecord
     lateinit var tensor: TensorAudio
-
-    // Listener that will be handle the result of this classifier
-    private var detectorListener: DetectorListener? = null
 
     // TimerTask
     private var task: TimerTask? = null
@@ -32,7 +29,7 @@ class MeowDetector {
      *
      * @param   context Context of the application
      */
-    fun initialize(context: Context) {
+    fun initializeAndStart() {
         classifier = AudioClassifier.createFromFile(context, YAMNET_MODEL)
         Log.d(TAG, "Model loaded from: $YAMNET_MODEL")
         audioInitialize()
@@ -93,7 +90,8 @@ class MeowDetector {
              *
              * @return  A score of the maximum float value among three classes
              */
-    fun inference(): Float {
+    private fun inference(): Float {
+        // record의 데이터를 tensor로 바로 옮기기 위해 array allocation 1번, data copy 2번 발생
         tensor.load(recorder)
         Log.d(TAG, tensor.tensorBuffer.shape.joinToString(","))
         val output = classifier.classify(tensor)
@@ -111,7 +109,7 @@ class MeowDetector {
         if (task == null) {
             task = Timer().scheduleAtFixedRate(0, REFRESH_INTERVAL_MS) {
                 val score = inference()
-                detectorListener?.onResults(score)
+                listener.onMeowDetectionResult(score)
             }
         }
     }
@@ -128,17 +126,8 @@ class MeowDetector {
      * To get result from this classifier, inherit this interface
      * and set itself to this' detector listener
      */
-    interface DetectorListener {
-        fun onResults(score: Float)
-    }
-
-    /**
-     * setDetectorListener
-     *
-     * Set detector listener for this classifier.
-     */
-    fun setDetectorListener(listener: DetectorListener) {
-        detectorListener = listener
+    interface MeowingListener {
+        fun onMeowDetectionResult(meowScore: Float)
     }
 
     /**
@@ -149,14 +138,11 @@ class MeowDetector {
      * @property    TAG                 tag for logging
      * @property    REFRESH_INTERVAL_MS refresh interval of the inference
      * @property    YAMNET_MODEL        file path of the model file
-     * @property    THRESHOLD           threshold of the score to classify sound as a horn sound
      */
     companion object {
         const val TAG = "MeowDetector"
-
         const val REFRESH_INTERVAL_MS = 33L
         const val YAMNET_MODEL = "yamnet_classification.tflite"
-
         const val THRESHOLD = 0.3f
     }
 }
