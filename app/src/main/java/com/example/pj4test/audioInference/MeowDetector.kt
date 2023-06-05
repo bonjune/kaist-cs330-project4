@@ -11,7 +11,7 @@ import java.util.*
 import kotlin.concurrent.scheduleAtFixedRate
 
 
-class SnapClassifier {
+class MeowDetector {
     // Libraries for audio classification
     lateinit var classifier: AudioClassifier
     lateinit var recorder: AudioRecord
@@ -81,25 +81,30 @@ class SnapClassifier {
     }
 
     @RequiresApi(Build.VERSION_CODES.M)
-    /**
-     * inference
-     *
-     * Make model inference of the audio gotten from audio recorder.
-     * Change recorded audio clip into an input tensor of the model,
-     * and classify the tensor with the audio classifier model.
-     *
-     * To classify honking sound, calculate the max predicted scores among 3 related classes,
-     * "Vehicle horn, car horn, honking", "Beep, bleep", and "Buzzer".
-     *
-     * @return  A score of the maximum float value among three classes
-     */
+            /**
+             * inference
+             *
+             * Make model inference of the audio gotten from audio recorder.
+             * Change recorded audio clip into an input tensor of the model,
+             * and classify the tensor with the audio classifier model.
+             *
+             * To classify honking sound, calculate the max predicted scores among 3 related classes,
+             * "Vehicle horn, car horn, honking", "Beep, bleep", and "Buzzer".
+             *
+             * @return  A score of the maximum float value among three classes
+             */
     fun inference(): Float {
         tensor.load(recorder)
         Log.d(TAG, tensor.tensorBuffer.shape.joinToString(","))
         val output = classifier.classify(tensor)
         Log.d(TAG, output.toString())
 
-        return output[0].categories.find { it.label == "Finger snapping" }!!.score
+//        val cat = output[0].categories.find { it.label == "Cat" }!!.score
+//        val purr = output[0].categories.find { it.label == "Purr" }!!.score
+        val meow = output[0].categories.find { it.label == "Meow" }!!.score
+//        val hiss = output[0].categories.find { it.label == "Hiss" }!!.score
+
+        return meow
     }
 
     fun startInferencing() {
@@ -147,7 +152,7 @@ class SnapClassifier {
      * @property    THRESHOLD           threshold of the score to classify sound as a horn sound
      */
     companion object {
-        const val TAG = "SnapClassifier"
+        const val TAG = "MeowDetector"
 
         const val REFRESH_INTERVAL_MS = 33L
         const val YAMNET_MODEL = "yamnet_classification.tflite"

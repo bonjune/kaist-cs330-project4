@@ -1,6 +1,7 @@
 package com.example.pj4test
 
 import android.Manifest.permission.CAMERA
+import android.Manifest.permission.INTERNET
 import android.Manifest.permission.RECORD_AUDIO
 import android.content.pm.PackageManager
 import android.os.Build
@@ -15,15 +16,18 @@ class MainActivity : AppCompatActivity() {
     private val TAG = "MainActivity"
 
     // permissions
-    private val permissions = arrayOf(RECORD_AUDIO, CAMERA)
-    private val PERMISSIONS_REQUEST = 0x0000001;
+    // 1. We need audio recorder for detecting meowing
+    // 2. We need camera to detect a cat
+    // 3. We need internet connection to send notification to the owner
+    private val permissions = arrayOf(RECORD_AUDIO, CAMERA, INTERNET)
+    private val PERMISSIONS_REQUEST = 0x0000001
 
     @RequiresApi(Build.VERSION_CODES.M)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        checkPermissions() // check permissions
+        checkPermissions()
     }
 
     private fun checkPermissions() {

@@ -38,11 +38,11 @@ import androidx.fragment.app.Fragment
 import com.example.pj4test.ProjectConfiguration
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import com.example.pj4test.cameraInference.PersonClassifier
+import com.example.pj4test.cameraInference.CatDetector
 import com.example.pj4test.databinding.FragmentCameraBinding
 import org.tensorflow.lite.task.vision.detector.Detection
 
-class CameraFragment : Fragment(), PersonClassifier.DetectorListener {
+class CameraFragment : Fragment(), CatDetector.DetectorListener {
     private val _tag = "CameraFragment"
 
     private var _fragmentCameraBinding: FragmentCameraBinding? = null
@@ -52,7 +52,7 @@ class CameraFragment : Fragment(), PersonClassifier.DetectorListener {
     
     private lateinit var personView: TextView
     
-    private lateinit var personClassifier: PersonClassifier
+    private lateinit var catDetector: CatDetector
     private lateinit var bitmapBuffer: Bitmap
     private var preview: Preview? = null
     private var imageAnalyzer: ImageAnalysis? = null
@@ -83,8 +83,8 @@ class CameraFragment : Fragment(), PersonClassifier.DetectorListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        personClassifier = PersonClassifier(requireContext(), this)
-        personClassifier.setupObjectDetector()
+        catDetector = CatDetector(requireContext(), this)
+        catDetector.setupObjectDetector()
 
         // Initialize our background executor
         cameraExecutor = Executors.newSingleThreadExecutor()
@@ -179,7 +179,7 @@ class CameraFragment : Fragment(), PersonClassifier.DetectorListener {
         val imageRotation = image.imageInfo.rotationDegrees
 
         // Pass Bitmap and rotation to the object detector helper for processing and detection
-        personClassifier.detect(bitmapBuffer, imageRotation)
+        catDetector.detect(bitmapBuffer, imageRotation)
     }
 
     // Update UI after objects have been detected. Extracts original image height/width
@@ -199,15 +199,15 @@ class CameraFragment : Fragment(), PersonClassifier.DetectorListener {
             )
             
             // find at least one bounding box of the person
-            val isPersonDetected: Boolean = results.find { it.categories[0].label == "person" } != null
+            val isPersonDetected: Boolean = results.find { it.categories[0].label == "cat" } != null
             
             // change UI according to the result
             if (isPersonDetected) {
-                personView.text = "PERSON"
+                personView.text = "CAT"
                 personView.setBackgroundColor(ProjectConfiguration.activeBackgroundColor)
                 personView.setTextColor(ProjectConfiguration.activeTextColor)
             } else {
-                personView.text = "NO PERSON"
+                personView.text = "NO CAT"
                 personView.setBackgroundColor(ProjectConfiguration.idleBackgroundColor)
                 personView.setTextColor(ProjectConfiguration.idleTextColor)
             }

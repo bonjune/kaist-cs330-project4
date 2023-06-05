@@ -26,7 +26,7 @@ import org.tensorflow.lite.task.core.BaseOptions
 import org.tensorflow.lite.task.vision.detector.Detection
 import org.tensorflow.lite.task.vision.detector.ObjectDetector
 
-class PersonClassifier(private val context: Context, private val listener: DetectorListener) {
+class CatDetector(private val context: Context, private val listener: DetectorListener) {
     // Libraries for object detection
     private lateinit var objectDetector: ObjectDetector
 

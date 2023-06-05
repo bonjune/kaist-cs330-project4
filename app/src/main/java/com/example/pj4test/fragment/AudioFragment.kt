@@ -7,10 +7,10 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import com.example.pj4test.ProjectConfiguration
-import com.example.pj4test.audioInference.SnapClassifier
+import com.example.pj4test.audioInference.MeowDetector
 import com.example.pj4test.databinding.FragmentAudioBinding
 
-class AudioFragment: Fragment(), SnapClassifier.DetectorListener {
+class AudioFragment: Fragment(), MeowDetector.DetectorListener {
     private val TAG = "AudioFragment"
 
     private var _fragmentAudioBinding: FragmentAudioBinding? = null
@@ -19,7 +19,7 @@ class AudioFragment: Fragment(), SnapClassifier.DetectorListener {
         get() = _fragmentAudioBinding!!
 
     // classifiers
-    lateinit var snapClassifier: SnapClassifier
+    lateinit var meowDetector: MeowDetector
 
     // views
     lateinit var snapView: TextView
@@ -39,29 +39,29 @@ class AudioFragment: Fragment(), SnapClassifier.DetectorListener {
 
         snapView = fragmentAudioBinding.SnapView
 
-        snapClassifier = SnapClassifier()
-        snapClassifier.initialize(requireContext())
-        snapClassifier.setDetectorListener(this)
+        meowDetector = MeowDetector()
+        meowDetector.initialize(requireContext())
+        meowDetector.setDetectorListener(this)
     }
 
     override fun onPause() {
         super.onPause()
-        snapClassifier.stopInferencing()
+        meowDetector.stopInferencing()
     }
 
     override fun onResume() {
         super.onResume()
-        snapClassifier.startInferencing()
+        meowDetector.startInferencing()
     }
 
     override fun onResults(score: Float) {
         activity?.runOnUiThread {
-            if (score > SnapClassifier.THRESHOLD) {
-                snapView.text = "SNAP"
+            if (score > MeowDetector.THRESHOLD) {
+                snapView.text = "MEOW"
                 snapView.setBackgroundColor(ProjectConfiguration.activeBackgroundColor)
                 snapView.setTextColor(ProjectConfiguration.activeTextColor)
             } else {
-                snapView.text = "NO SNAP"
+                snapView.text = "NO MEOW"
                 snapView.setBackgroundColor(ProjectConfiguration.idleBackgroundColor)
                 snapView.setTextColor(ProjectConfiguration.idleTextColor)
             }
