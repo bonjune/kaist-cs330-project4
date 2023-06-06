@@ -18,19 +18,21 @@ package com.example.pj4test.fragment
 import android.annotation.SuppressLint
 import android.content.res.Configuration
 import android.graphics.Bitmap
+import android.hardware.camera2.CaptureRequest
 import android.os.Bundle
 import android.util.Log
+import android.util.Range
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
+import androidx.camera.camera2.interop.Camera2Interop
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888
-import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
@@ -41,6 +43,7 @@ import com.example.pj4test.audioInference.MeowDetector
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import com.example.pj4test.cameraInference.CatDetector
+import com.example.pj4test.cameraInference.CatImageAnalyzer
 import com.example.pj4test.databinding.FragmentHungryCatBinding
 import org.tensorflow.lite.task.vision.detector.Detection
 
@@ -56,10 +59,10 @@ class HungryCatFragment : Fragment(), CatDetector.CatDetectionListener,
     private lateinit var catDetectionView: TextView
 
     private lateinit var catDetector: CatDetector
-    private lateinit var bitmapBuffer: Bitmap
     private var preview: Preview? = null
-    private var imageAnalyzer: ImageAnalysis? = null
+    private var imageAnalysis: ImageAnalysis? = null
     private var camera: Camera? = null
+    private lateinit var catImageAnalyzer: CatImageAnalyzer
 
     private lateinit var meowDetector: MeowDetector
     private lateinit var meowView: TextView
@@ -94,6 +97,8 @@ class HungryCatFragment : Fragment(), CatDetector.CatDetectionListener,
 
         catDetector = CatDetector(requireContext(), this)
         catDetector.setUpObjectDetector()
+
+        catImageAnalyzer = CatImageAnalyzer(catDetector)
 
         // Initialize our background executor
         cameraExecutor = Executors.newSingleThreadExecutor()
@@ -134,29 +139,54 @@ class HungryCatFragment : Fragment(), CatDetector.CatDetectionListener,
     private fun bindCameraUseCases(cameraProvider: ProcessCameraProvider) {
 
         // CameraSelector - makes assumption that we're only using the back camera
-        val cameraSelector =
-            CameraSelector.Builder().requireLensFacing(CameraSelector.LENS_FACING_BACK).build()
+        val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
         // Preview. Only using the 4:3 ratio because this is the closest to our models
-        preview =
-            Preview.Builder()
-                .setTargetAspectRatio(AspectRatio.RATIO_4_3)
-                .setTargetRotation(fragmentBinding.viewFinder.display.rotation)
-                .build()
+        val previewBuilder =
+            Preview.Builder().apply {
+                setTargetAspectRatio(AspectRatio.RATIO_4_3)
+                setTargetRotation(fragmentBinding.viewFinder.display.rotation)
+            }
+
+//        Camera2Interop.Extender(previewBuilder).apply {
+//            setCaptureRequestOption(
+//                CaptureRequest.CONTROL_AE_MODE,
+//                CaptureRequest.CONTROL_AE_MODE_OFF
+//            )
+//            setCaptureRequestOption(
+//                CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
+//                Range(5, 10)
+//            )
+//        }
+        preview = previewBuilder.build()
         // Attach the viewfinder's surface provider to preview use case
-        preview?.setSurfaceProvider(fragmentBinding.viewFinder.surfaceProvider)
+        preview!!.setSurfaceProvider(fragmentBinding.viewFinder.surfaceProvider)
 
 
         // ImageAnalysis. Using RGBA 8888 to match how our models work
-        imageAnalyzer =
-            ImageAnalysis.Builder()
-                .setTargetAspectRatio(AspectRatio.RATIO_4_3)
-                .setTargetRotation(fragmentBinding.viewFinder.display.rotation)
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .setOutputImageFormat(OUTPUT_IMAGE_FORMAT_RGBA_8888)
-                .build()
+        val imageAnalysisBuilder =
+            ImageAnalysis.Builder().apply {
+                setTargetAspectRatio(AspectRatio.RATIO_4_3)
+                setTargetRotation(fragmentBinding.viewFinder.display.rotation)
+                setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                setOutputImageFormat(OUTPUT_IMAGE_FORMAT_RGBA_8888)
+            }
+
+        Camera2Interop.Extender(imageAnalysisBuilder).apply {
+            setCaptureRequestOption(
+                CaptureRequest.CONTROL_AE_MODE,
+                CaptureRequest.CONTROL_AE_MODE_OFF
+            )
+            setCaptureRequestOption(
+                CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
+                Range(5, 10)
+            )
+        }
+        imageAnalysis = imageAnalysisBuilder.build()
+
         // The analyzer can then be assigned to the instance
-        imageAnalyzer!!.setAnalyzer(cameraExecutor) { image -> detectObjects(image) }
+        imageAnalysis!!
+            .setAnalyzer(cameraExecutor, catImageAnalyzer)
 
         // Must unbind the use-cases before rebinding them
         cameraProvider.unbindAll()
@@ -168,7 +198,7 @@ class HungryCatFragment : Fragment(), CatDetector.CatDetectionListener,
                 this,
                 cameraSelector,
                 preview,
-                imageAnalyzer
+                imageAnalysis
             )
         } catch (exc: Exception) {
             Log.e(_tag, "Use case binding failed", exc)
@@ -177,25 +207,7 @@ class HungryCatFragment : Fragment(), CatDetector.CatDetectionListener,
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        imageAnalyzer?.targetRotation = fragmentBinding.viewFinder.display.rotation
-    }
-
-    private fun detectObjects(image: ImageProxy) {
-        if (!::bitmapBuffer.isInitialized) {
-            // The image rotation and RGB image buffer are initialized only once
-            // the analyzer has started running
-            bitmapBuffer = Bitmap.createBitmap(
-                image.width,
-                image.height,
-                Bitmap.Config.ARGB_8888
-            )
-        }
-        // Copy out RGB bits to the shared bitmap buffer
-        image.use { bitmapBuffer.copyPixelsFromBuffer(image.planes[0].buffer) }
-        val imageRotation = image.imageInfo.rotationDegrees
-
-        // Pass Bitmap and rotation to the object detector helper for processing and detection
-        catDetector.detect(bitmapBuffer, imageRotation)
+        imageAnalysis?.targetRotation = fragmentBinding.viewFinder.display.rotation
     }
 
     // Update UI after objects have been detected. Extracts original image height/width
