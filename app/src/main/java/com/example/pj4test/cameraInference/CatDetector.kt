@@ -73,7 +73,7 @@ class CatDetector(private val context: Context, private val listener: CatDetecti
         val results = objectDetector.detect(tensorImage) ?: mutableListOf()
         inferenceTime = SystemClock.uptimeMillis() - inferenceTime
         listener.onCatDetectionResults(
-            results,
+            results.filter { it.categories[0].score >= 0.75 } as MutableList<Detection>,
             inferenceTime,
             tensorImage.height,
             tensorImage.width)
