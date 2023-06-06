@@ -66,6 +66,9 @@ class HungryCatFragment : Fragment(), CatDetector.CatDetectionListener, MeowDete
     /** Blocking camera operations are performed using this executor */
     private lateinit var cameraExecutor: ExecutorService
 
+    private var isCatDetected: Boolean = false
+    private var isCatMeowing: Boolean = false
+
     override fun onDestroyView() {
         _fragmentBinding = null
         super.onDestroyView()
@@ -202,6 +205,9 @@ class HungryCatFragment : Fragment(), CatDetector.CatDetectionListener, MeowDete
         imageHeight: Int,
         imageWidth: Int
     ) {
+        Log.d(_tag, "Cat (object) detection took $inferenceTime")
+        isCatDetected = results.find { it.categories[0].label == "cat" } != null
+        handleHungryCat()
         activity?.runOnUiThread {
             // Pass necessary information to OverlayView for drawing on the canvas
             fragmentBinding.overlay.setResults(
@@ -209,10 +215,7 @@ class HungryCatFragment : Fragment(), CatDetector.CatDetectionListener, MeowDete
                 imageHeight,
                 imageWidth
             )
-            
-            // find at least one bounding box of the person
-            val isCatDetected: Boolean = results.find { it.categories[0].label == "cat" } != null
-            
+
             // change UI according to the result
             if (isCatDetected) {
                 catDetectionView.setText(R.string.cat_detected)
@@ -236,8 +239,10 @@ class HungryCatFragment : Fragment(), CatDetector.CatDetectionListener, MeowDete
     }
 
     override fun onMeowDetectionResult(meowScore: Float) {
+        isCatMeowing = meowScore > MeowDetector.THRESHOLD
+        handleHungryCat()
         activity?.runOnUiThread {
-            if (meowScore > MeowDetector.THRESHOLD) {
+            if (isCatMeowing) {
                 meowView.setText(R.string.meow_detected)
                 meowView.setBackgroundColor(ProjectConfiguration.activeBackgroundColor)
                 meowView.setTextColor(ProjectConfiguration.activeTextColor)
@@ -246,6 +251,12 @@ class HungryCatFragment : Fragment(), CatDetector.CatDetectionListener, MeowDete
                 meowView.setBackgroundColor(ProjectConfiguration.idleBackgroundColor)
                 meowView.setTextColor(ProjectConfiguration.idleTextColor)
             }
+        }
+    }
+
+    private fun handleHungryCat() {
+        if (isCatMeowing && isCatDetected) {
+            Log.d(_tag, "Cat is hungry")
         }
     }
 }
