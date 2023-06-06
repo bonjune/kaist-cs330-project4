@@ -5,4 +5,6 @@
     <string name="cat_not_detected">NO CAT</string>
     <string name="meow_detected">MEOW</string>
     <string name="meow_not_detected">NO MEOW</string>
+
+    <string name="hungry_cat_detected">Hungry Cat Detected</string>
 </resources>

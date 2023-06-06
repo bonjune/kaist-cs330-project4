@@ -9,7 +9,7 @@ android {
 
     defaultConfig {
         applicationId "com.example.pj4test"
-        minSdk 23
+        minSdk 26
         targetSdk 33
         versionCode 1
         versionName "1.0"
@@ -52,8 +52,6 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 
-    // ADDED: tensorflow audio
-    implementation 'org.tensorflow:tensorflow-lite-task-audio:0.4.0'
 
     // CameraX core library
     def camerax_version = '1.1.0-beta03'
@@ -68,6 +66,9 @@ dependencies {
     // CameraX View class
     implementation "androidx.camera:camera-view:$camerax_version"
 
+    implementation 'org.tensorflow:tensorflow-lite-task-audio:0.4.0'
     implementation 'org.tensorflow:tensorflow-lite-task-vision:0.4.0'
     implementation 'org.tensorflow:tensorflow-lite-gpu:2.9.0'
+
+    implementation 'androidx.lifecycle:lifecycle-service:2.6.1'
 }
