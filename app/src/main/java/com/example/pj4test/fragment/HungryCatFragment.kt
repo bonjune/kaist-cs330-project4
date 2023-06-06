@@ -17,7 +17,6 @@ package com.example.pj4test.fragment
 
 import android.annotation.SuppressLint
 import android.content.res.Configuration
-import android.graphics.Bitmap
 import android.hardware.camera2.CaptureRequest
 import android.os.Bundle
 import android.util.Log
@@ -148,16 +147,6 @@ class HungryCatFragment : Fragment(), CatDetector.CatDetectionListener,
                 setTargetRotation(fragmentBinding.viewFinder.display.rotation)
             }
 
-//        Camera2Interop.Extender(previewBuilder).apply {
-//            setCaptureRequestOption(
-//                CaptureRequest.CONTROL_AE_MODE,
-//                CaptureRequest.CONTROL_AE_MODE_OFF
-//            )
-//            setCaptureRequestOption(
-//                CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
-//                Range(5, 10)
-//            )
-//        }
         preview = previewBuilder.build()
         // Attach the viewfinder's surface provider to preview use case
         preview!!.setSurfaceProvider(fragmentBinding.viewFinder.surfaceProvider)
@@ -172,21 +161,10 @@ class HungryCatFragment : Fragment(), CatDetector.CatDetectionListener,
                 setOutputImageFormat(OUTPUT_IMAGE_FORMAT_RGBA_8888)
             }
 
-        Camera2Interop.Extender(imageAnalysisBuilder).apply {
-            setCaptureRequestOption(
-                CaptureRequest.CONTROL_AE_MODE,
-                CaptureRequest.CONTROL_AE_MODE_OFF
-            )
-            setCaptureRequestOption(
-                CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
-                Range(5, 10)
-            )
-        }
         imageAnalysis = imageAnalysisBuilder.build()
 
         // The analyzer can then be assigned to the instance
-        imageAnalysis!!
-            .setAnalyzer(cameraExecutor, catImageAnalyzer)
+        imageAnalysis!!.setAnalyzer(cameraExecutor, catImageAnalyzer)
 
         // Must unbind the use-cases before rebinding them
         cameraProvider.unbindAll()
