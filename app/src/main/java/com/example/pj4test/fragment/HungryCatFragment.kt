@@ -21,35 +21,17 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.res.Configuration
-import android.hardware.camera2.CaptureRequest
 import android.os.Bundle
 import android.util.Log
-import android.util.Range
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import android.widget.Toast
-import androidx.camera.camera2.interop.Camera2Interop
-import androidx.camera.core.AspectRatio
-import androidx.camera.core.Camera
-import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
-import androidx.camera.core.ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888
-import androidx.camera.core.Preview
-import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.core.content.ContentProviderCompat.requireContext
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.example.pj4test.ProjectConfiguration
 import com.example.pj4test.R
-import com.example.pj4test.audioInference.MeowDetector
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-import com.example.pj4test.cameraInference.CatDetector
-import com.example.pj4test.cameraInference.CatImageAnalyzer
 import com.example.pj4test.databinding.FragmentHungryCatBinding
-import org.tensorflow.lite.task.vision.detector.Detection
 
 class HungryCatFragment : Fragment() {
     private val _tag = "HungryCatFragment"
