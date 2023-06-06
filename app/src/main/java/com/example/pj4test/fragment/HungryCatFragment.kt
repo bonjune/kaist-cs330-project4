@@ -44,7 +44,8 @@ import com.example.pj4test.cameraInference.CatDetector
 import com.example.pj4test.databinding.FragmentHungryCatBinding
 import org.tensorflow.lite.task.vision.detector.Detection
 
-class HungryCatFragment : Fragment(), CatDetector.CatDetectionListener, MeowDetector.MeowingListener {
+class HungryCatFragment : Fragment(), CatDetector.CatDetectionListener,
+    MeowDetector.MeowingListener {
     private val _tag = "HungryCatFragment"
 
     private var _fragmentBinding: FragmentHungryCatBinding? = null
@@ -53,7 +54,7 @@ class HungryCatFragment : Fragment(), CatDetector.CatDetectionListener, MeowDete
         get() = _fragmentBinding!!
 
     private lateinit var catDetectionView: TextView
-    
+
     private lateinit var catDetector: CatDetector
     private lateinit var bitmapBuffer: Bitmap
     private var preview: Preview? = null
@@ -95,7 +96,7 @@ class HungryCatFragment : Fragment(), CatDetector.CatDetectionListener, MeowDete
         cameraExecutor = Executors.newSingleThreadExecutor()
 
         // Wait for the views to be properly laid out
-         fragmentBinding.viewFinder.post {
+        fragmentBinding.viewFinder.post {
             // Set up the camera and its use cases
             setUpCamera()
         }
@@ -137,17 +138,17 @@ class HungryCatFragment : Fragment(), CatDetector.CatDetectionListener, MeowDete
         preview =
             Preview.Builder()
                 .setTargetAspectRatio(AspectRatio.RATIO_4_3)
-                .setTargetRotation( fragmentBinding.viewFinder.display.rotation)
+                .setTargetRotation(fragmentBinding.viewFinder.display.rotation)
                 .build()
         // Attach the viewfinder's surface provider to preview use case
-        preview?.setSurfaceProvider( fragmentBinding.viewFinder.surfaceProvider)
+        preview?.setSurfaceProvider(fragmentBinding.viewFinder.surfaceProvider)
 
 
         // ImageAnalysis. Using RGBA 8888 to match how our models work
         imageAnalyzer =
             ImageAnalysis.Builder()
                 .setTargetAspectRatio(AspectRatio.RATIO_4_3)
-                .setTargetRotation( fragmentBinding.viewFinder.display.rotation)
+                .setTargetRotation(fragmentBinding.viewFinder.display.rotation)
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .setOutputImageFormat(OUTPUT_IMAGE_FORMAT_RGBA_8888)
                 .build()
@@ -209,10 +210,10 @@ class HungryCatFragment : Fragment(), CatDetector.CatDetectionListener, MeowDete
                 imageHeight,
                 imageWidth
             )
-            
+
             // find at least one bounding box of the person
             val isCatDetected: Boolean = results.find { it.categories[0].label == "cat" } != null
-            
+
             // change UI according to the result
             if (isCatDetected) {
                 catDetectionView.setText(R.string.cat_detected)
