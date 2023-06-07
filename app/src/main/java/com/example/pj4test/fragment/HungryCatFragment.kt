@@ -20,32 +20,25 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.res.Configuration
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
-import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.Camera
 import androidx.fragment.app.Fragment
 import com.example.pj4test.ProjectConfiguration
 import com.example.pj4test.R
 import com.example.pj4test.databinding.FragmentHungryCatBinding
 
 class HungryCatFragment : Fragment() {
-    private val _tag = "HungryCatFragment"
+    companion object {
+        const val TAG = "HungryCatFragment"
+    }
 
-    private var _fragmentBinding: FragmentHungryCatBinding? = null
+    private var fragmentBinding: FragmentHungryCatBinding? = null
 
-    private val fragmentBinding
-        get() = _fragmentBinding!!
-
-    private lateinit var catDetectionView: TextView
-
-    private var imageAnalysis: ImageAnalysis? = null
-
-    private lateinit var meowView: TextView
+    private lateinit var camera: Camera
 
     private val hungryCatReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -59,7 +52,7 @@ class HungryCatFragment : Fragment() {
     }
 
     override fun onDestroyView() {
-        _fragmentBinding = null
+        fragmentBinding = null
         super.onDestroyView()
 
         requireActivity().unregisterReceiver(hungryCatReceiver)
@@ -70,11 +63,11 @@ class HungryCatFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _fragmentBinding = FragmentHungryCatBinding.inflate(inflater, container, false)
+        fragmentBinding = FragmentHungryCatBinding.inflate(inflater, container, false)
         val filter = IntentFilter(getString(R.string.hungry_cat_detected))
         requireActivity().registerReceiver(hungryCatReceiver, filter)
-        Log.d(_tag, "Fragment inflated")
-        return fragmentBinding.root
+        Log.d(TAG, "Fragment inflated")
+        return fragmentBinding!!.root
     }
 
     @SuppressLint("MissingPermission")
@@ -82,41 +75,43 @@ class HungryCatFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         // Initialize our background executor
-        // Wait for the views to be properly laid out
-        catDetectionView = fragmentBinding.CatDetectionView
-        meowView = fragmentBinding.MeowView
-    }
-
-    override fun onConfigurationChanged(newConfig: Configuration) {
-        super.onConfigurationChanged(newConfig)
-        imageAnalysis?.targetRotation = fragmentBinding.viewFinder.display.rotation
     }
 
     private fun handleCatDetection(isCatDetected: Boolean) {
+        val catDetectionView = fragmentBinding?.CatDetectionView
         activity?.runOnUiThread {
             // change UI according to the result
             if (isCatDetected) {
-                catDetectionView.setText(R.string.cat_detected)
-                catDetectionView.setBackgroundColor(ProjectConfiguration.activeBackgroundColor)
-                catDetectionView.setTextColor(ProjectConfiguration.activeTextColor)
+                catDetectionView?.apply {
+                    setText(R.string.cat_detected)
+                    setBackgroundColor(ProjectConfiguration.activeBackgroundColor)
+                    setTextColor(ProjectConfiguration.activeTextColor)
+                }
             } else {
-                catDetectionView.setText(R.string.cat_not_detected)
-                catDetectionView.setBackgroundColor(ProjectConfiguration.idleBackgroundColor)
-                catDetectionView.setTextColor(ProjectConfiguration.idleTextColor)
+                catDetectionView?.apply {
+                    setText(R.string.cat_not_detected)
+                    setBackgroundColor(ProjectConfiguration.idleBackgroundColor)
+                    setTextColor(ProjectConfiguration.idleTextColor)
+                }
             }
         }
     }
 
     private fun handleMeowDetection(isMeowDetected: Boolean) {
+        val meowView = fragmentBinding?.MeowView
         activity?.runOnUiThread {
             if (isMeowDetected) {
-                meowView.setText(R.string.meow_detected)
-                meowView.setBackgroundColor(ProjectConfiguration.activeBackgroundColor)
-                meowView.setTextColor(ProjectConfiguration.activeTextColor)
+                meowView?.apply {
+                    setText(R.string.meow_detected)
+                    setBackgroundColor(ProjectConfiguration.activeBackgroundColor)
+                    setTextColor(ProjectConfiguration.activeTextColor)
+                }
             } else {
-                meowView.setText(R.string.meow_not_detected)
-                meowView.setBackgroundColor(ProjectConfiguration.idleBackgroundColor)
-                meowView.setTextColor(ProjectConfiguration.idleTextColor)
+                meowView?.apply {
+                    setText(R.string.meow_not_detected)
+                    setBackgroundColor(ProjectConfiguration.idleBackgroundColor)
+                    setTextColor(ProjectConfiguration.idleTextColor)
+                }
             }
         }
     }

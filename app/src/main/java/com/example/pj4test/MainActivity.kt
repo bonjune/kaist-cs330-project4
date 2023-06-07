@@ -23,7 +23,6 @@ class MainActivity : AppCompatActivity(), HungryCatServiceCallback {
         val intent = Intent(this, HungryCatService::class.java)
         intent.action = "Start HungryCatService!"
         startForegroundService(intent)
-
     }
 
     private fun checkPermissions() {
