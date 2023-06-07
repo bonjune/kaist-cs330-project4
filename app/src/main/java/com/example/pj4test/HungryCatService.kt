@@ -166,6 +166,11 @@ class HungryCatService : LifecycleService(), CatDetector.CatDetectionListener, M
         isCatMeowing = meowScore > MeowDetector.THRESHOLD
         if (isCatMeowing) {
             Log.d(TAG, "Meow detected")
+            meowDetector.boostInference()
+            catImageAnalyzer.boostInference()
+        } else {
+            meowDetector.setInferenceIdle()
+            catImageAnalyzer.setInferenceIdle()
         }
         handleHungryCat()
     }
@@ -183,6 +188,11 @@ class HungryCatService : LifecycleService(), CatDetector.CatDetectionListener, M
         isCatDetected = results.find { it.categories[0].label == "cat" } != null
         if (isCatDetected) {
             Log.d(TAG, "Cat detected")
+            meowDetector.boostInference()
+            catImageAnalyzer.boostInference()
+        } else {
+            meowDetector.setInferenceIdle()
+            catImageAnalyzer.setInferenceIdle()
         }
         handleHungryCat()
     }

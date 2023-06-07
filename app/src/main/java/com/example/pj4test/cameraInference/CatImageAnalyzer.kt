@@ -10,7 +10,7 @@ import kotlin.system.measureTimeMillis
 class CatImageAnalyzer(private val detector: CatDetector): ImageAnalysis.Analyzer {
     private var lastFrameTimestamp: Long = 0
     private lateinit var buffer: Bitmap
-    private val oncePer: Int = 1000
+    private var oncePer: Int = 1000
 
     override fun analyze(image: ImageProxy) {
         initializeBuffer(image)
@@ -35,6 +35,13 @@ class CatImageAnalyzer(private val detector: CatDetector): ImageAnalysis.Analyze
             Log.d("CameraFPS", "FPS: $fps")
         }
         lastFrameTimestamp = currentTimestamp
+    }
+
+    fun boostInference() {
+        oncePer = 200
+    }
+    fun setInferenceIdle() {
+        oncePer = 1000
     }
 
     private fun initializeBuffer(image: ImageProxy) {

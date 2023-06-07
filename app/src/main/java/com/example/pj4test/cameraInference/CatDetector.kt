@@ -72,6 +72,7 @@ class CatDetector(private val context: Context, private val listener: CatDetecti
 
         val results = objectDetector.detect(tensorImage) ?: mutableListOf()
         inferenceTime = SystemClock.uptimeMillis() - inferenceTime
+        Log.d(TAG, results.toString())
         listener.onCatDetectionResults(
             results.filter { it.categories[0].score >= 0.6 } as MutableList<Detection>,
             inferenceTime,
@@ -90,6 +91,7 @@ class CatDetector(private val context: Context, private val listener: CatDetecti
     }
 
     companion object {
+        const val TAG = "CatDetector"
         const val THRESHOLD: Float = 0.5f
         const val NUM_THREADS: Int = 2
         const val MAX_RESULTS: Int = 3

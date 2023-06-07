@@ -2,13 +2,12 @@ package com.example.pj4test.audioInference
 
 import android.content.Context
 import android.media.AudioRecord
-import android.os.Build
 import android.util.Log
-import androidx.annotation.RequiresApi
 import org.tensorflow.lite.support.audio.TensorAudio
 import org.tensorflow.lite.task.audio.classifier.AudioClassifier
 import java.util.*
 import kotlin.concurrent.scheduleAtFixedRate
+import kotlin.system.measureTimeMillis
 
 
 class MeowDetector(private val context: Context, private val listener: MeowingListener) {
@@ -20,22 +19,13 @@ class MeowDetector(private val context: Context, private val listener: MeowingLi
     // TimerTask
     private var task: TimerTask? = null
 
-    /**
-     * initialize
-     *
-     * Create YAMNet classifier from tflite model file saved in YAMNET_MODEL,
-     * initialize the audio recorder, and make recorder start recording.
-     * Set TimerTask for periodic inferences by REFRESH_INTERVAL_MS milliseconds.
-     *
-     * @param   context Context of the application
-     */
     fun initializeAndStart() {
         classifier = AudioClassifier.createFromFile(context, YAMNET_MODEL)
         Log.d(TAG, "Model loaded from: $YAMNET_MODEL")
         audioInitialize()
         startRecording()
 
-        startInferencing()
+        startInference()
     }
 
     /**
@@ -77,46 +67,53 @@ class MeowDetector(private val context: Context, private val listener: MeowingLi
         Log.d(TAG, "record stopped.")
     }
 
-    @RequiresApi(Build.VERSION_CODES.M)
-            /**
-             * inference
-             *
-             * Make model inference of the audio gotten from audio recorder.
-             * Change recorded audio clip into an input tensor of the model,
-             * and classify the tensor with the audio classifier model.
-             *
-             * To classify honking sound, calculate the max predicted scores among 3 related classes,
-             * "Vehicle horn, car horn, honking", "Beep, bleep", and "Buzzer".
-             *
-             * @return  A score of the maximum float value among three classes
-             */
     private fun inference(): Float {
         // record의 데이터를 tensor로 바로 옮기기 위해 array allocation 1번, data copy 2번 발생
         tensor.load(recorder)
-        Log.d(TAG, tensor.tensorBuffer.shape.joinToString(","))
         val output = classifier.classify(tensor)
-        Log.d(TAG, output.toString())
 
-//        val cat = output[0].categories.find { it.label == "Cat" }!!.score
-//        val purr = output[0].categories.find { it.label == "Purr" }!!.score
-        val meow = output[0].categories.find { it.label == "Meow" }!!.score
-//        val hiss = output[0].categories.find { it.label == "Hiss" }!!.score
+        val catCategory = output[0].categories.filter {
+            it.label == "Cat" || it.label == "Purr" || it.label == "Meow" || it.label == "Hiss"
+        }.maxByOrNull {
+            it.score
+        } ?: return 0F
 
-        return meow
+        Log.d(TAG, "${catCategory.label}, ${catCategory.score}")
+        return catCategory.score
     }
 
-    fun startInferencing() {
+    private var inferenceIntervalMs: Long = 1000L
+    private fun startInference() {
         if (task == null) {
-            task = Timer().scheduleAtFixedRate(0, REFRESH_INTERVAL_MS) {
+            task = Timer().scheduleAtFixedRate(0, inferenceIntervalMs) {
                 val score = inference()
                 listener.onMeowDetectionResult(score)
             }
         }
     }
 
-    fun stopInferencing() {
+    fun boostInference() {
+        if (inferenceIntervalMs == 50L) {
+            return
+        }
+        inferenceIntervalMs = 50L
+        rescheduleInference()
+    }
+
+    fun setInferenceIdle() {
+        if (inferenceIntervalMs == 1000L) {
+            return
+        }
+        inferenceIntervalMs = 1000L
+        rescheduleInference()
+    }
+
+    private fun rescheduleInference() {
         task?.cancel()
-        task = null
+        task = Timer().scheduleAtFixedRate(0, inferenceIntervalMs) {
+            val score = inference()
+            listener.onMeowDetectionResult(score)
+        }
     }
 
     /**
