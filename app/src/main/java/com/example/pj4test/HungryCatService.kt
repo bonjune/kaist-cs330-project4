@@ -40,14 +40,6 @@ class HungryCatService : LifecycleService(), CatDetector.CatDetectionListener, M
         super.onCreate()
         startForegroundService()
 
-        cameraExecutor = Executors.newSingleThreadExecutor()
-
-        catDetector = CatDetector(this, this)
-        catDetector.setUpObjectDetector()
-
-        catImageAnalyzer = CatImageAnalyzer(catDetector)
-
-        meowDetector = MeowDetector(this, this)
 
         Log.d(TAG, "HungryCatService Start")
     }
@@ -60,10 +52,20 @@ class HungryCatService : LifecycleService(), CatDetector.CatDetectionListener, M
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
 
+        cameraExecutor = Executors.newSingleThreadExecutor()
+        catDetector = CatDetector(this, this)
+        catDetector.setUpObjectDetector()
+        catImageAnalyzer = CatImageAnalyzer(catDetector)
+        meowDetector = MeowDetector(this, this)
         meowDetector.initializeAndStart()
         setUpCamera()
 
-        intent?.action?.let { Log.d(TAG, it) }
+        if (intent?.action.isNullOrBlank().not()) {
+            Log.d(TAG, intent?.action!!)
+        } else {
+            Log.d(TAG, "HungryCatService trying to restart")
+        }
+
         return START_STICKY
     }
 
