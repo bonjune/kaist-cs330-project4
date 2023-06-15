@@ -111,7 +111,7 @@ class MeowDetector(private val context: Context, private val listener: MeowingLi
 
     private fun rescheduleInference() {
         task?.cancel()
-        task = Timer().scheduleAtFixedRate(0, inferenceIntervalMs) {
+        task = Timer().scheduleAtFixedRate(500, inferenceIntervalMs) {
             val score = inference()
             listener.onMeowDetectionResult(score)
         }
