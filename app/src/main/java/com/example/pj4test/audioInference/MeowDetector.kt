@@ -72,7 +72,8 @@ class MeowDetector(private val context: Context, private val listener: MeowingLi
         tensor.load(recorder)
         val output = classifier.classify(tensor)
 
-        val catCategory = output[0].categories.filter {
+        val classifications = output.firstOrNull() ?: return 0F;
+        val catCategory = classifications.categories.filter {
             it.label == "Cat" || it.label == "Purr" || it.label == "Meow" || it.label == "Hiss"
         }.maxByOrNull {
             it.score

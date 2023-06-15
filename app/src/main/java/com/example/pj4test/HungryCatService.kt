@@ -40,7 +40,6 @@ class HungryCatService : LifecycleService(), CatDetector.CatDetectionListener, M
         super.onCreate()
         startForegroundService()
 
-
         Log.d(TAG, "HungryCatService Start")
     }
 
@@ -67,6 +66,10 @@ class HungryCatService : LifecycleService(), CatDetector.CatDetectionListener, M
         }
 
         return START_STICKY
+    }
+
+    override fun onLowMemory() {
+        super.onLowMemory()
     }
 
     private fun startForegroundService() {
