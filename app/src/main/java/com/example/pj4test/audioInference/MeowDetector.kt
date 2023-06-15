@@ -16,6 +16,8 @@ class MeowDetector(private val context: Context, private val listener: MeowingLi
     lateinit var recorder: AudioRecord
     lateinit var tensor: TensorAudio
 
+    lateinit var timer: Timer
+
     // TimerTask
     private var task: TimerTask? = null
 
@@ -86,7 +88,8 @@ class MeowDetector(private val context: Context, private val listener: MeowingLi
     private var inferenceIntervalMs: Long = 1000L
     private fun startInference() {
         if (task == null) {
-            task = Timer().scheduleAtFixedRate(0, inferenceIntervalMs) {
+            timer = Timer()
+            task = timer.scheduleAtFixedRate(0, inferenceIntervalMs) {
                 val score = inference()
                 listener.onMeowDetectionResult(score)
             }
@@ -94,10 +97,10 @@ class MeowDetector(private val context: Context, private val listener: MeowingLi
     }
 
     fun boostInference() {
-        if (inferenceIntervalMs == 200L) {
+        if (inferenceIntervalMs == 50L) {
             return
         }
-        inferenceIntervalMs = 200L
+        inferenceIntervalMs = 50L
         rescheduleInference()
     }
 
@@ -111,7 +114,8 @@ class MeowDetector(private val context: Context, private val listener: MeowingLi
 
     private fun rescheduleInference() {
         task?.cancel()
-        task = Timer().scheduleAtFixedRate(500, inferenceIntervalMs) {
+        timer.purge()
+        task = timer.scheduleAtFixedRate(0, inferenceIntervalMs) {
             val score = inference()
             listener.onMeowDetectionResult(score)
         }
