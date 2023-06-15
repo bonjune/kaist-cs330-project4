@@ -94,10 +94,10 @@ class MeowDetector(private val context: Context, private val listener: MeowingLi
     }
 
     fun boostInference() {
-        if (inferenceIntervalMs == 50L) {
+        if (inferenceIntervalMs == 200L) {
             return
         }
-        inferenceIntervalMs = 50L
+        inferenceIntervalMs = 200L
         rescheduleInference()
     }
 
